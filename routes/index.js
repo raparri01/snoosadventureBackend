@@ -103,7 +103,7 @@ router.post('/battle', async function (req, res, next) {
   if (win) {
     finalMessage = `You win! You have recieved ${monster.gold} gold and ${monster.experience} experience. You currently have ${user.experience + monster.experience} experience.`;
     userRef.update({
-      health: user.health,
+      health: Math.ceil(user.health),
       experience: user.experience + monster.experience
     });
   } else {
@@ -162,8 +162,6 @@ router.post('/buy', function (req, res, next) {
     console.log(error);
   })
 });
-
-
 router.post('/sell', function (req, res, next) {
   let userRef = db.collection('adventurers').doc(req.body.user);
   userRef.get().then((stats) => {
@@ -175,6 +173,37 @@ router.post('/sell', function (req, res, next) {
 
     }
   })
+});
+router.post('/createMonster', async function(req, res) {
+  let userRef = db.collection('adventurers').doc(req.body.user);
+  let user = await userRef.get();
+  if(user.exists && user.level >= 10){
+    if(
+      req.body.monster.health + req.body.monster.attack > user.level //User cannot allocate more points than their level to attack + health
+      || req.body.monster.attack + req.body.monster.health < user.level *.9 //User must allocate points equal to atleast 90% of their level to health and attack
+      || req.body.monster.attack > req.body.monster.health * 5  //attack can not be greater than 5 times the health
+      || req.body.monster.health > req.body.monster.attack * 5 //health can not be greater than 5 times the attack
+      || req.body.monster.experience + req.body.monster.gold > user.level // User cannot allocate more points than their level to gold + experience
+      || req.body.monster.experience + req.body.monster.gold < user.level * .9 //User must allocate points equal to atleast 90% of their level to experience and gold
+      || req.body.monster.experience > req.body.monster.health * 5 //experience cannot be greater than 5 times monster health
+      || req.body.monster.health > req.body.monster.experience * 5 //health cannot be greater than 5 times monster experience
+      ){
+      res.send('Invalid monster stats, please see the rules on monster creation');
+    } else {
+      let monsterRef = db.collection('monsters').doc(req.monster.name);
+      let setMonster = monsterRef.set({
+        name: req.body.monster.name,
+        attack: req.body.monster.attack,
+        health: req.body.monster.health,
+        experience: req.body.monster.experience,
+        gold: req.body.monster.gold,
+        createdBy: req.body.user
+      });
+      res.send(`${user.name} has created the level ${user.level} monster: ${req.monster.name}`);
+    }
+  } else {
+    res.send("This character hasn't been created yet");
+  }
 });
 
 module.exports = router;
