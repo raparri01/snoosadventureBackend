@@ -2,12 +2,6 @@ var express = require('express');
 var router = express.Router();
 var admin = require("firebase-admin");
 
-//item imports
-var weapons = require('../items/weapons');
-var armor = require('../items/armor');
-var materials = require('../items/materials');
-var etc = require('../items/etc');
-
 var serviceAccount = require("../credentials/snoosadventure-firebase-adminsdk-1u6dk-6fc5957a2b");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -92,50 +86,52 @@ router.post('/rest', function (req, res, next) {
 router.post('/battle', async function (req, res, next) {
   let userRef = db.collection('adventurers').doc(req.body.user);
   let monsterRef = db.collection('monsters').doc(req.body.monster);
-
   let user = await userRef.get();
   user = user.data();
   let monster = await monsterRef.get();
-  monster = monster.data();
-  let battleRecord = [];
-  let weaponMultiplier = user.equipped.weapon.length > 0 ? user.level * user.equipped.weapon.multiplier : 1.3;
-  let armorMultiplier = user.equipped.armor.length > 0 ? user.level * user.equipped.armor.multiplier : 1.0;
-  while (monster.health > 0 && user.health > 0) {
-    let userDamage = user.level * weaponMultiplier * (Math.random() * 3);
-    let monsterDamage = monster.attack * (Math.random() * 3) * armorMultiplier;
-    monster.health -= userDamage;
-    user.health -= monsterDamage;
-    battleRecord.push(`user deals: ${userDamage}, Monster deals: ${monsterDamage}`);
-    battleRecord.push(`user Health: ${user.health}, MonsterHealth: ${monster.health}`);
-  }
-  let win = monster.health > user.health ? false : true;
-  let finalMessage;
-  if (win) {
-    finalMessage = `You win! You have recieved ${monster.gold} gold and ${monster.experience} experience. You currently have ${user.experience + monster.experience} experience.`;
-    userRef.update({
-      health: Math.ceil(user.health),
-      experience: user.experience + monster.experience
-    });
-  } else {
-    finalMessage = `${monster.name} has defeated you!`;
-    if (user.experience - (user.experience * .1) < 0) {
+  if(monster && user){
+
+    monster = monster.data();
+    let battleRecord = [];
+    let weaponMultiplier = user.equipped.weapon.length > 0 ? user.level * user.equipped.weapon.multiplier : 1.3;
+    let armorMultiplier = user.equipped.armor.length > 0 ? user.level * user.equipped.armor.multiplier : 1.0;
+    while (monster.health > 0 && user.health > 0) {
+      let userDamage = user.level * weaponMultiplier * (Math.random() * 3);
+      let monsterDamage = monster.attack * (Math.random() * 3) * armorMultiplier;
+      monster.health -= userDamage;
+      user.health -= monsterDamage;
+      battleRecord.push(`user deals: ${userDamage}, Monster deals: ${monsterDamage}`);
+      battleRecord.push(`user Health: ${user.health}, MonsterHealth: ${monster.health}`);
+    }
+    let win = monster.health > user.health ? false : true;
+    let finalMessage;
+    if (win) {
+      finalMessage = `You win! You have recieved ${monster.gold} gold and ${monster.experience} experience. You currently have ${user.experience + monster.experience} experience.`;
       userRef.update({
-        health: 1,
-        experience: 0
+        health: Math.ceil(user.health),
+        experience: user.experience + monster.experience
       });
     } else {
-      userRef.update({
-        health: 1,
-        experience: user.experience - user.experienceNeeded * .1
-      });
+      finalMessage = `${monster.name} has defeated you!`;
+      if (user.experience - (user.experience * .1) < 0) {
+        userRef.update({
+          health: 1,
+          experience: 0
+        });
+      } else {
+        userRef.update({
+          health: 1,
+          experience: user.experience - user.experienceNeeded * .1
+        });
+      }
     }
+    res.send({
+      record: battleRecord,
+      win: win,
+      finalMessage: finalMessage
+    });
   }
-  res.send({
-    record: battleRecord,
-    win: win,
-    finalMessage: finalMessage
-  });
-
+    
 });
 router.post('/levelUp', async function (req, res, next) {
   let userRef = db.collection('adventurers').doc(req.body.user);
