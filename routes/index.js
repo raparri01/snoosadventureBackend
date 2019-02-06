@@ -16,6 +16,16 @@ var db = admin.firestore();
 const settings = { timestampsInSnapshots: true };
 db.settings(settings);
 
+router.post('/exists', function (req, res) {
+  let userRef = db.collection('adventurers').doc(req.body.user);
+  userRef.get().then(user => {
+    if (user.exists) {
+      res.send({ exists: true });
+    } else {
+      res.send({ exists: false });
+    }
+  })
+});
 router.post('/create', function (req, res, next) {
   let userRef = db.collection('adventurers').doc(req.body.user);
   userRef.get().then(user => {
@@ -89,7 +99,7 @@ router.post('/battle', async function (req, res, next) {
   monster = monster.data();
   let battleRecord = [];
   let weaponMultiplier = user.equipped.weapon.length > 0 ? user.level * user.equipped.weapon.multiplier : 1.3;
-  let armorMultiplier = user.equipped.armor.length > 0? user.level * user.equipped.armor.multiplier : 1.0;
+  let armorMultiplier = user.equipped.armor.length > 0 ? user.level * user.equipped.armor.multiplier : 1.0;
   while (monster.health > 0 && user.health > 0) {
     let userDamage = user.level * weaponMultiplier * (Math.random() * 3);
     let monsterDamage = monster.attack * (Math.random() * 3) * armorMultiplier;
@@ -174,20 +184,20 @@ router.post('/sell', function (req, res, next) {
     }
   })
 });
-router.post('/createMonster', async function(req, res) {
+router.post('/createMonster', async function (req, res) {
   let userRef = db.collection('adventurers').doc(req.body.user);
   let user = await userRef.get();
-  if(user.exists && user.level >= 10){
-    if(
+  if (user.exists && user.level >= 10) {
+    if (
       req.body.monster.health + req.body.monster.attack > user.level //User cannot allocate more points than their level to attack + health
-      || req.body.monster.attack + req.body.monster.health < user.level *.9 //User must allocate points equal to atleast 90% of their level to health and attack
+      || req.body.monster.attack + req.body.monster.health < user.level * .9 //User must allocate points equal to atleast 90% of their level to health and attack
       || req.body.monster.attack > req.body.monster.health * 5  //attack can not be greater than 5 times the health
       || req.body.monster.health > req.body.monster.attack * 5 //health can not be greater than 5 times the attack
       || req.body.monster.experience + req.body.monster.gold > user.level // User cannot allocate more points than their level to gold + experience
       || req.body.monster.experience + req.body.monster.gold < user.level * .9 //User must allocate points equal to atleast 90% of their level to experience and gold
       || req.body.monster.experience > req.body.monster.health * 5 //experience cannot be greater than 5 times monster health
       || req.body.monster.health > req.body.monster.experience * 5 //health cannot be greater than 5 times monster experience
-      ){
+    ) {
       res.send('Invalid monster stats, please see the rules on monster creation');
     } else {
       let monsterRef = db.collection('monsters').doc(req.monster.name);
