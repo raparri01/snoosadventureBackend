@@ -10,11 +10,12 @@ var db = admin.firestore();
 const settings = { timestampsInSnapshots: true };
 db.settings(settings);
 
-router.post('/exists', function (req, res) {
+//Routes
+router.post('/stats', function (req, res) {
   let userRef = db.collection('adventurers').doc(req.body.user);
   userRef.get().then(user => {
     if (user.exists) {
-      res.send({ exists: true });
+      res.send(`Your stats are: energy: level: ${user.data().level}, health: ${user.data().health}, energy: ${user.data().energy}, experience:${user.data().experience}, experienceNeeded: ${user.data().experienceNeeded}, gold: ${user.data().gold}, max energy: ${user.data().maxEnergy}, maxHealth: ${user.data().maxHealth}`);
     } else {
       res.send({ exists: false });
     }
@@ -89,7 +90,7 @@ router.post('/battle', async function (req, res, next) {
   let user = await userRef.get();
   user = user.data();
   let monster = await monsterRef.get();
-  if(monster && user){
+  if (monster && user) {
 
     monster = monster.data();
     let battleRecord = [];
@@ -131,7 +132,7 @@ router.post('/battle', async function (req, res, next) {
       finalMessage: finalMessage
     });
   }
-    
+
 });
 router.post('/levelUp', async function (req, res, next) {
   let userRef = db.collection('adventurers').doc(req.body.user);
@@ -141,7 +142,7 @@ router.post('/levelUp', async function (req, res, next) {
     userRef.update({
       level: user.level + 1,
       experience: user.experience - user.experienceNeeded,
-      experienceNeeded: Math.ceil(Math.pow(user.experienceNeeded, 1.5)),
+      experienceNeeded: Math.ceil(user.experienceNeeded * 2),
       [req.body.selectedStat]: Math.ceil(user[req.body.selectedStat] * 1.4)
     });
     res.send(`You have leveled up and increased your ${req.body.selectedStat}, you are now level ${user.level + 1} and your ${req.body.selectedStat} is now ${Math.ceil(user[req.body.selectedStat] * 1.4)}`);
