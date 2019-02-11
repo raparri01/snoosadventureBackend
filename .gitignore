@@ -85,4 +85,5 @@ typings/
 .dynamodb/
 /credentials
 /src/credentials
+src/credentials
 # End of https://www.gitignore.io/api/node
