@@ -1,5 +1,5 @@
 var admin = require("firebase-admin");
-var serviceAccount = require("../credentials/snoosadventure-firebase-adminsdk-1u6dk-6fc5957a2b");
+var serviceAccount = require("../credentials/snoosadventure-firebase-adminsdk-1u6dk-67e85772eb");
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
@@ -7,8 +7,27 @@ var db = admin.firestore();
 const settings = { timestampsInSnapshots: true };
 db.settings(settings);
 
-exports.stats = function (req, res) {
-  console.log(req.params.name)
+exports.getTopUsers = async function (req, res) {
+  let userRef = db.collection('adventurers').orderBy('level').startAt(req.params.index - 1).limit(25);
+  let users = await userRef.get();
+  let usersArray = [];
+  users.forEach(doc => usersArray.splice(0, 0, doc.data()));
+  res.send({users: usersArray});
+}
+exports.getUsers = async function (req, res) {
+  //need to come back to this when firestore updates to allow search of substrings within fields
+  //In the meantime, use algolia to accomplish.
+  let userRef = db.collection('adventurers');
+  let users = await userRef.where('name', '==', `%${req.params.name}%`).get();
+  let usersArray = [];
+  users.forEach(doc => {
+    usersArray.push(doc.data());
+  });
+
+  res.send({ users: usersArray });
+}
+
+exports.getUserStats = function (req, res) {
   let userRef = db.collection('adventurers').doc(req.params.name);
   userRef.get().then(user => {
     if (user.exists) {

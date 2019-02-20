@@ -3,7 +3,9 @@ var router = express.Router();
 
 var rpgController = require("../../controllers/rpgController");
 //Routes
-router.get('/stats/:name', rpgController.stats);
+router.get('/users/top/:index', rpgController.getTopUsers);
+router.get('/users/:name', rpgController.getUsers);
+router.get('/stats/:name', rpgController.getUserStats);
 router.post('/create', rpgController.create);
 router.post('/mine', rpgController.mine);
 router.post('/rest', rpgController.rest);
