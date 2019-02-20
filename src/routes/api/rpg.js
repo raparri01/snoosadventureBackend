@@ -7,6 +7,7 @@ router.get('/users/top/:index', rpgController.getTopUsers);
 router.get('/users/:name', rpgController.getUsers);
 router.get('/stats/:name', rpgController.getUserStats);
 router.post('/create', rpgController.create);
+router.post('/users/setImage', rpgController.setUserImage);
 router.post('/mine', rpgController.mine);
 router.post('/rest', rpgController.rest);
 router.post('/battle', rpgController.battle);
